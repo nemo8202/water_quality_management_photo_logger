@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='utf8'?>
+<nuitka-compilation-report nuitka_version="4.0" nuitka_commercial_version="not installed" mode="standalone" completion="error exit message (1)" exit_message="pyside6: Error, failed to locate the 'PySide6' installation.">
+  <performance>
+    <memory_usage name="after_launch" value="35250176" />
+  </performance>
+  <data_composer blob_size="None" />
+  <command_line>
+    <option value="--standalone" />
+    <option value="--enable-plugin=pyside6" />
+    <option value="--windows-console-mode=disable" />
+    <option value="--windows-icon-from-ico=favicon.ico" />
+    <option value="--include-data-file=favicon.ico=favicon.ico" />
+    <option value="--include-data-file=favicon.png=favicon.png" />
+    <option value="--output-dir=dist" />
+    <option value="--output-filename=ConstructionPhotoLogger.exe" />
+    <option value="--company-name=DCriders" />
+    <option value="--product-name=Construction Photo Logger" />
+    <option value="--file-version=1.0.0" />
+    <option value="--product-version=1.0.0" />
+    <option value="--file-description=Management and annotation tool for construction site photos" />
+    <option value="--assume-yes-for-downloads" />
+    <option value="main.py" />
+  </command_line>
+  <plugins>
+    <plugin name="anti-bloat" user_enabled="no" />
+    <plugin name="data-files" user_enabled="no" />
+    <plugin name="delvewheel" user_enabled="no" />
+    <plugin name="dll-files" user_enabled="no" />
+    <plugin name="eventlet" user_enabled="no" />
+    <plugin name="gevent" user_enabled="no" />
+    <plugin name="gi" user_enabled="no" />
+    <plugin name="glfw" user_enabled="no" />
+    <plugin name="implicit-imports" user_enabled="no" />
+    <plugin name="kivy" user_enabled="no" />
+    <plugin name="matplotlib" user_enabled="no" />
+    <plugin name="multiprocessing" user_enabled="no" />
+    <plugin name="options-nanny" user_enabled="no" />
+    <plugin name="pbr-compat" user_enabled="no" />
+    <plugin name="pkg-resources" user_enabled="no" />
+    <plugin name="playwright" user_enabled="no" />
+    <plugin name="pyside6" user_enabled="yes" />
+    <plugin name="pywebview" user_enabled="no" />
+    <plugin name="spacy" user_enabled="no" />
+    <plugin name="transformers" user_enabled="no" />
+  </plugins>
+  <distributions />
+  <python python_exe="${sys.prefix}\python.exe" python_flavor="CPython Official" python_version="3.13.12" os_name="Windows" os_release="11" arch_name="x86_64" filesystem_encoding="utf-8" gil="yes">
+    <search_path>
+      <path value="${cwd}" />
+      <path value="${sys.prefix}\DLLs" />
+      <path value="${sys.prefix}\Lib" />
+      <path value="${sys.prefix}" />
+      <path value="${sys.prefix}\Lib\site-packages" />
+    </search_path>
+  </python>
+  <output />
+</nuitka-compilation-report>
