@@ -197,6 +197,8 @@ class MainWindow(QMainWindow):
             self.table.setItem(i, 1, QTableWidgetItem(""))
             # Make first column read-only
             self.table.item(i, 0).setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+        
+        self.table.itemChanged.connect(self.check_auto_done)
         self.right_layout.addWidget(self.table)
 
         # Buttons
@@ -211,6 +213,8 @@ class MainWindow(QMainWindow):
 
         self.current_image_path = None
         self.original_pixmap = None
+        self.image_count = 0
+        self.current_image_number = 0
         
         # Load default logo if available
         # Priority: favicon.png -> favicon.jpg -> favicon.ico
@@ -220,6 +224,21 @@ class MainWindow(QMainWindow):
                  self.load_image(logo_path)
                  break
         
+    def check_auto_done(self, item):
+        # We only care about changes in the second column (Values)
+        if item.column() != 1:
+            return
+
+        all_filled = True
+        for i in range(5):
+            val_item = self.table.item(i, 1)
+            if not val_item or not val_item.text().strip():
+                all_filled = False
+                break
+        
+        if all_filled:
+            self.merge_table()
+
     def show_about(self):
         self.about_dialog = AboutDialog(self)
         self.about_dialog.show()
@@ -235,20 +254,36 @@ class MainWindow(QMainWindow):
                 self.add_thumbnail(file_path)
 
     def add_thumbnail(self, path):
+        self.image_count += 1
+        
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(10)
+        
+        num_label = QLabel(str(self.image_count))
+        num_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #333;")
+        num_label.setFixedWidth(20)
+        layout.addWidget(num_label)
+        
         btn = QPushButton()
         pixmap = QPixmap(path)
         icon = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         btn.setIcon(icon)
         btn.setIconSize(icon.size())
-        btn.clicked.connect(lambda: self.load_image(path))
-        self.thumbnail_layout.addWidget(btn)
+        num = self.image_count
+        btn.clicked.connect(lambda: self.load_image(path, num))
+        layout.addWidget(btn)
+        
+        self.thumbnail_layout.addWidget(container)
         
         # Load the first image dropped if none loaded
         if self.current_image_path is None:
-            self.load_image(path)
+            self.load_image(path, num)
 
-    def load_image(self, path):
+    def load_image(self, path, num=0):
         self.current_image_path = path
+        self.current_image_number = num
         self.original_pixmap = QPixmap(path)
         self.image_viewer.set_image(self.original_pixmap)
 
@@ -261,127 +296,130 @@ class MainWindow(QMainWindow):
         input_buffer = QBuffer()
         input_buffer.open(QIODevice.ReadWrite)
         self.original_pixmap.save(input_buffer, "PNG")
-        pil_image = Image.open(io.BytesIO(input_buffer.data())).convert("RGB") # Ensure RGB mode for drawing
+        pil_image = Image.open(io.BytesIO(input_buffer.data())).convert("RGB")
 
         img_w, img_h = pil_image.size
         
-        # 2. Setup Drawing
-        draw = ImageDraw.Draw(pil_image)
+        # 2. Table Constraints
+        rows = 5
+        target_max_width = int(img_w * 0.3)
+        min_total_width = int(img_w * 0.2) # Minimum to look decent
         
-        # Font settings (Dynamic sizing)
+        # Setup Drawing and Font
+        draw = ImageDraw.Draw(pil_image)
         try:
-            # Use Malgun Gothic for Korean support on Windows
             font_path = "C:/Windows/Fonts/malgun.ttf"
             if not os.path.exists(font_path):
-                 font_path = "arial.ttf" # Fallback
+                 font_path = "arial.ttf"
             
-            # Font size relative to image width (e.g., 2.5% of width)
-            font_size = int(img_w * 0.025)
+            # Base font size on image height
+            font_size = max(12, int(img_h * 0.02))
             font = ImageFont.truetype(font_path, font_size)
         except IOError:
             font = ImageFont.load_default()
-            font_size = 20 # Approximation for default font
+            font_size = 20
 
-        padding = int(font_size * 0.6)
-        row_height = font_size + (padding * 2)
-        rows = 5
-        cols = 2
-        table_height = rows * row_height
-        
-        # Calculate max width for each column
+        padding = font_size // 2
+        line_spacing = int(font_size * 0.2)
+
+        # 3. Calculate Column Widths
         max_col1_width = 0
-        max_col2_width = 0
-        
-        # Check column 1 (keys)
         for item in self.table_items:
-             # Use getbbox for accurate width or getlength
-             try:
-                 w = font.getlength(item)
-             except AttributeError:
-                 w = font.getsize(item)[0] # Older pillow fallback
-             max_col1_width = max(max_col1_width, w)
-             
-        # Check column 2 (values)
+            try:
+                w = font.getlength(item)
+            except AttributeError:
+                w = font.getsize(item)[0]
+            max_col1_width = max(max_col1_width, w)
+        
+        col1_width = int(max_col1_width + (padding * 2))
+        
+        # Col 2 gets the rest up to 30% max
+        available_col2_width = target_max_width - col1_width - (padding * 2)
+        if available_col2_width < font_size * 4: # Safety minimum for col2
+             available_col2_width = font_size * 4
+        
+        # 4. Wrap Text and Calculate Row Heights
+        def wrap_text(text, max_w):
+            lines = []
+            words = list(text) # For Korean, character-based wrapping is often better
+            current_line = ""
+            for char in words:
+                test_line = current_line + char
+                try:
+                    w = font.getlength(test_line)
+                except AttributeError:
+                    w = font.getsize(test_line)[0]
+                
+                if w <= max_w:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = char
+            if current_line:
+                lines.append(current_line)
+            return lines if lines else [""]
+
+        wrapped_rows = []
+        row_heights = []
         for i in range(rows):
             val_text = ""
             if self.table.item(i, 1):
                 val_text = self.table.item(i, 1).text()
-            try:
-                 w = font.getlength(val_text)
-            except AttributeError:
-                 w = font.getsize(val_text)[0]
-            max_col2_width = max(max_col2_width, w)
             
-        # Add padding to widths
-        col1_width = int(max_col1_width + (padding * 3)) # Left + Right padding + extra
-        col2_width = int(max_col2_width + (padding * 3))
-        
-        # Ensure minimum width to look decent (e.g. 30% of image width total)
-        min_total_width = int(img_w * 0.3)
-        
-        table_width = col1_width + col2_width
-        
-        # If calculated width is less than minimum, expand col2
-        if table_width < min_total_width:
-             diff = min_total_width - table_width
-             col2_width += diff
-             table_width = min_total_width
+            # Wrap standard/long text
+            lines = wrap_text(val_text, available_col2_width)
+            wrapped_rows.append(lines)
+            
+            # Row height = (number of lines * font_size) + (gaps between lines) + vertical padding
+            h = (len(lines) * font_size) + ((len(lines) - 1) * line_spacing) + (padding * 2)
+            row_heights.append(h)
 
-        # Ensure it doesn't exceed image width
-        if table_width > img_w:
-             table_width = img_w
-             # Recalculate cols proportionally or just clamp?
-             # Simple clamp for now, text might clip but better than crash
-             col2_width = table_width - col1_width
+        table_width = col1_width + available_col2_width + (padding * 2)
+        if table_width < min_total_width:
+            diff = min_total_width - table_width
+            available_col2_width += diff
+            table_width = min_total_width
+
+        table_height = sum(row_heights)
         
-        # Position: Bottom-Right
-        # start_x = img_w - table_width - padding
-        start_x = img_w - table_width - padding
-        start_y = img_h - table_height - padding 
+        # 5. Position: Bottom-Right
+        start_x = img_w - table_width - (padding * 2)
+        start_y = img_h - table_height - (padding * 2)
         
-        # Ensure it doesn't go off-screen (top/left)
         if start_x < 0: start_x = 0
         if start_y < 0: start_y = 0
         
-        # Draw background for table
-        # We'll make it semi-transparent white optionally, but solid white is safer for readability
+        # Draw background
         draw.rectangle([start_x, start_y, start_x + table_width, start_y + table_height], fill="white", outline="black")
         
-        # Draw rows and text
-        # col1_width is now absolute width of first column
-        
+        # 6. Draw Rows
+        current_y = start_y
         for i in range(rows):
-            row_y = start_y + (i * row_height)
+            h = row_heights[i]
             
-            # Draw Horizontal Line
-            draw.line([(start_x, row_y), (start_x + table_width, row_y)], fill="black", width=2)
+            # Horizontal Line
+            draw.line([(start_x, current_y), (start_x + table_width, current_y)], fill="black", width=2)
             
-            # Get data
-            key_item = self.table_items[i]
-            val_item = ""
-            if self.table.item(i, 1):
-                val_item = self.table.item(i, 1).text()
-                
-            # Draw Vertical Line between columns
-            draw.line([(start_x + col1_width, row_y), (start_x + col1_width, row_y + row_height)], fill="black", width=2)
+            # Vertical Line between columns
+            draw.line([(start_x + col1_width, current_y), (start_x + col1_width, current_y + h)], fill="black", width=2)
 
-            # Text positioning
-            text_y = row_y + padding
+            # Draw Key (Column 1)
+            draw.text((start_x + padding, current_y + padding), self.table_items[i], font=font, fill="black")
             
-            # Draw Key
-            draw.text((start_x + padding, text_y), key_item, font=font, fill="black")
+            # Draw Values (Column 2) - Multi-line
+            for j, line in enumerate(wrapped_rows[i]):
+                line_y = current_y + padding + (j * (font_size + line_spacing))
+                draw.text((start_x + col1_width + padding, line_y), line, font=font, fill="black")
             
-            # Draw Value
-            draw.text((start_x + col1_width + padding, text_y), val_item, font=font, fill="black")
+            current_y += h
             
-        # Draw bottom border
+        # Draw outer borders
         draw.line([(start_x, start_y + table_height), (start_x + table_width, start_y + table_height)], fill="black", width=2)
-        # Draw right border
-        draw.line([(start_x + table_width -1, start_y), (start_x + table_width -1, start_y + table_height)], fill="black", width=2) # -1 to be visible
-        # Draw left border
+        draw.line([(start_x + table_width - 1, start_y), (start_x + table_width -1, start_y + table_height)], fill="black", width=2)
         draw.line([(start_x, start_y), (start_x, start_y + table_height)], fill="black", width=2)
 
-        # 3. Update QPixmap
+        # 7. Update Pixmap
         output_buffer = io.BytesIO()
         pil_image.save(output_buffer, format="PNG")
         output_data = output_buffer.getvalue()
@@ -390,7 +428,6 @@ class MainWindow(QMainWindow):
         updated_pixmap.loadFromData(output_data)
         
         self.image_viewer.set_image(updated_pixmap)
-        QMessageBox.information(self, "Success", "Table merged successfully.")
 
     def export_image(self):
         pixmap = self.image_viewer.get_pixmap()
@@ -414,7 +451,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "Please fill '공사명' and '날짜' to export.")
             return
 
-        filename = f"{date}_{name}.jpg"
+        prefix = f"{self.current_image_number}_" if self.current_image_number > 0 else ""
+        filename = f"{prefix}{date}_{name}.jpg"
         # Sanitize filename
         invalid_chars = '<>:"/\\|?*'
         for char in invalid_chars:
