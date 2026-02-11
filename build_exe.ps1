@@ -33,6 +33,8 @@ if (Test-Path "dist") {
     --product-version=1.0.0 `
     --file-description="Management and annotation tool for construction site photos" `
     --assume-yes-for-downloads `
+    --quiet `
+    --no-progress `
     main.py
 
 if ($LASTEXITCODE -eq 0) {
