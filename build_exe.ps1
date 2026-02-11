@@ -1,5 +1,15 @@
+# Determine the correct Python executable (prefer .venv)
+$pythonExe = "python"
+if (Test-Path ".\.venv\Scripts\python.exe") {
+    $pythonExe = ".\.venv\Scripts\python.exe"
+    Write-Host "Using virtual environment Python: $pythonExe" -ForegroundColor Cyan
+}
+else {
+    Write-Host "Using global Python (Virtual environment not found)" -ForegroundColor Yellow
+}
+
 # Install dependencies if not already installed
-python -m pip install nuitka zstandard PySide6 Pillow
+& $pythonExe -m pip install nuitka zstandard PySide6 Pillow
 
 # Clean old distribution folder
 if (Test-Path "dist") {
@@ -8,8 +18,7 @@ if (Test-Path "dist") {
 }
 
 # Compile using Nuitka
-# Note: We let Nuitka use the default 'main.dist' name first, then rename it.
-python -m nuitka `
+& $pythonExe -m nuitka `
     --standalone `
     --enable-plugin=pyside6 `
     --windows-console-mode=disable `
@@ -17,6 +26,7 @@ python -m nuitka `
     --include-data-file=favicon.ico=favicon.ico `
     --include-data-file=favicon.png=favicon.png `
     --output-dir=dist `
+    --output-filename=ConstructionPhotoLogger.exe `
     --company-name="DCriders" `
     --product-name="Construction Photo Logger" `
     --file-version=1.0.0 `
@@ -34,7 +44,6 @@ if ($LASTEXITCODE -eq 0) {
     
     if (Test-Path $oldDistDir) {
         Rename-Item -Path $oldDistDir -NewName "ConstructionPhotoLogger"
-        Rename-Item -Path "$newDistDir/main.exe" -NewName "ConstructionPhotoLogger.exe"
         
         Write-Host "Compilation complete!" -ForegroundColor Green
         Write-Host "The standalone application is in: $newDistDir" -ForegroundColor White

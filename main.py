@@ -183,7 +183,8 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.image_viewer, stretch=2)
 
         # Table
-        self.table = EnterKeyTableWidget(5, 2)
+        self.table_items = ["측정소명", "점검일자", "공종", "점검내용"]
+        self.table = EnterKeyTableWidget(len(self.table_items), 2)
         self.table.setHorizontalHeaderLabels(["Item", "Value"])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -191,7 +192,6 @@ class MainWindow(QMainWindow):
         self.table.setStyleSheet("background-color: white; color: black;")
         self.table.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.table_items = ["공사명", "위치", "날짜", "공종", "내용"]
         for i, item in enumerate(self.table_items):
             self.table.setItem(i, 0, QTableWidgetItem(item))
             self.table.setItem(i, 1, QTableWidgetItem(""))
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
             return
 
         all_filled = True
-        for i in range(5):
+        for i in range(len(self.table_items)):
             val_item = self.table.item(i, 1)
             if not val_item or not val_item.text().strip():
                 all_filled = False
@@ -301,7 +301,7 @@ class MainWindow(QMainWindow):
         img_w, img_h = pil_image.size
         
         # 2. Table Constraints
-        rows = 5
+        rows = len(self.table_items)
         target_max_width = int(img_w * 0.3)
         min_total_width = int(img_w * 0.2) # Minimum to look decent
         
@@ -438,17 +438,17 @@ class MainWindow(QMainWindow):
         # Get construct name and date
         name = ""
         date = ""
-        for i in range(5):
+        for i in range(len(self.table_items)):
              key_item = self.table.item(i, 0)
              val_item = self.table.item(i, 1)
              if key_item and val_item:
-                 if key_item.text() == "공사명":
+                 if key_item.text() == "측정소명":
                      name = val_item.text()
-                 elif key_item.text() == "날짜":
+                 elif key_item.text() == "점검일자":
                      date = val_item.text()
         
         if not name or not date:
-            QMessageBox.warning(self, "Error", "Please fill '공사명' and '날짜' to export.")
+            QMessageBox.warning(self, "Error", "Please fill '측정소명' and '점검일자' to export.")
             return
 
         prefix = f"{self.current_image_number}_" if self.current_image_number > 0 else ""
