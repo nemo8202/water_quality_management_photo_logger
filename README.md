@@ -2,6 +2,12 @@
 
 A Python-based desktop application for managing and annotating construction site photos. Built with PySide6 and Pillow, this tool allows you to easily view images, add project metadata, and merge data tables directly onto your photos for documentation.
 
+## Windows Installer (설치 프로그램)
+
+Windows용 최신 설치 프로그램을 아래 링크에서 다운로드할 수 있습니다:
+
+[📥 Windows용 설치 프로그램 다운로드](https://github.com/nemo8202/water_quality_management_photo_logger/releases/latest)
+
 ![Demo Animation](demo.gif)
 
 ## Features
@@ -10,18 +16,18 @@ A Python-based desktop application for managing and annotating construction site
 - **Thumbnail Viewer**: Quickly navigate through loaded images via the sidebar.
 - **Interactive Image Viewer**: Zoom and pan to inspect photo details.
 - **Metadata Editing**: Input project details including:
-    - **Project Name** (공사명)
-    - **Location** (위치)
-    - **Date** (날짜)
-    - **Type of Work** (공종)
-    - **Content** (내용)
+  - **Project Name** (공사명)
+  - **Location** (위치)
+  - **Date** (날짜)
+  - **Type of Work** (공종)
+  - **Content** (내용)
 - **Table Merging**: Automatically overlay the metadata table onto the bottom of the image.
-    - **High Quality Text**: Uses direct text drawing (PIL) for sharp text at any resolution.
-    - **Font Support**: Automatically uses "Malgun Gothic" for Korean text support.
+  - **High Quality Text**: Uses direct text drawing (PIL) for sharp text at any resolution.
+  - **Font Support**: Automatically uses "Malgun Gothic" for Korean text support.
 - **Export**: Save the annotated image with an automatically generated filename.
 - **Custom UI**:
-    - **Main Toolbar**: Quick access to "About" dialog.
-    - **About Dialog**: Custom dialog with background image support (`favicon.png`).
+  - **Main Toolbar**: Quick access to "About" dialog.
+  - **About Dialog**: Custom dialog with background image support (`favicon.png`).
 
 ## Prerequisites
 
